@@ -107,25 +107,39 @@ class AttributeViewSet(viewsets.ModelViewSet):
 
 
 class ResourceViewSet(viewsets.ModelViewSet):
-    queryset = resource.Resource.objects.prefetch_related('departments', 'labels', 'attributes')
+
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filter_fields = ('name', 'departments__name', 'labels__k', 'labels__v')
     search_fields = ('$name', '$departments__name', '$labels__k', 'labels__v',)
     ordering_fields = ('name', '_ctime', '_mtime')
 
     @staticmethod
-    def get_attribute_classname_by_attributeDefined(x):
+    def get_attribute_classname_by_attribute_defined(x):
         return x[:-7]
+
+    def get_resource_defined(self):
+        resource_defined = self.kwargs.get('resource_defined')
+        rd = getattr(self, 'rd', None)
+        if rd is None:
+            try:
+                rd = resource.ResourceDefined.objects.prefetch_related('attributes').get(name=resource_defined)
+            except resource.ResourceDefined.DoesNotExist:
+                raise NotFound("no such resource type")
+            else:
+                setattr(self, 'rd', rd)
+        return rd
+
+    def get_queryset(self):
+        rd = self.get_resource_defined()
+        setattr(self, 'rd', rd)
+        queryset = resource.Resource.objects.prefetch_related('departments', 'labels', 'attributes').filter(type=rd)
+        return queryset
 
     def get_serializer_class(self):
         sc = getattr(self, 'my_sc', None)
         if sc is None:
-            resourceDefined = self.kwargs.get('resourceDefined')
-            try:
-                rd = resource.ResourceDefined.objects.prefetch_related('attributes').get(name=resourceDefined)
-            except resource.ResourceDefined.DoesNotExist:
-                raise NotFound("no such resource type")
-            attr_map = {x.name: (x.id, ResourceViewSet.get_attribute_classname_by_attributeDefined(x.__class__.__name__))
+            rd = self.get_resource_defined()
+            attr_map = {x.name: (x.id, ResourceViewSet.get_attribute_classname_by_attribute_defined(x.__class__.__name__))
                         for x in rd.attributes.all()}
             de_attr_map = {x.id: x.name for x in rd.attributes.all()}
 

@@ -25,7 +25,7 @@ router.register(r'resourceDefined', views.ResourceDefinedViewSet)
 router.register(r'attributeDefined', views.AttributeDefinedViewSet)
 router.register(r'resource/label', views.LabelKeyViewSet, basename='rs-labels-k')
 router.register(r'resource/label/(?P<label_k>[^/.]*)', views.LabelValueViewSet, basename='rs-labels-v')
-router.register(r'(?P<resourceDefined>[^/.]+)', views.ResourceViewSet, basename='rs')
+router.register(r'(?P<resource_defined>[^/.]+)', views.ResourceViewSet, basename='rs')
 
 
 
