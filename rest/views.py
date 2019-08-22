@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, NotFound
 from rest_framework.filters import BaseFilterBackend, OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db import transaction
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
@@ -132,7 +133,7 @@ class ResourceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         rd = self.get_resource_defined()
         setattr(self, 'rd', rd)
-        queryset = resource.Resource.objects.prefetch_related('departments', 'labels', 'attributes').filter(type=rd)
+        queryset = resource.Resource.objects.filter(type=rd).prefetch_related('departments', 'labels', 'attributes')
         return queryset
 
     def get_serializer_class(self):
@@ -159,26 +160,46 @@ class ResourceViewSet(viewsets.ModelViewSet):
         s = self.get_serializer(data=request.data)
         s.is_valid(raise_exception=True)
         umap = { x.attributeDefined: x for x in instance.attributes.all()}
-        for x in s.validated_data['attributes']:
-            t = umap.get(x['attributeDefined'], None)
-            if t is None:
-                try:
-                    resourcetype = x.pop('resourcetype')
-                    x['resource'] = instance
-                    adm = getattr(resource, resourcetype)
-                    adm.objects.create(**x)
-                except TypeError as err:
-                    raise APIException("TypeError: %s is %s %s" % (x['attributeDefined'].name, x['attributeDefined'].__class__.__name__, str(err)))
-            else:
-                t.value = x['value']
-                t.save()
-        labels = s.validated_data.pop('labels')
-        departments = s.validated_data.pop('departments')
-        instance.departments.set(departments)
-        instance.labels.all().delete()
-        instance.labels.bulk_create([resource.Label(resource=instance, **label) for label in labels])
-        instance.name = s.validated_data.get('name')
-        instance.save()
+        with transaction.atomic():
+            for x in s.validated_data['attributes']:
+                t = umap.get(x['attributeDefined'], None)
+                if t is None:
+                    try:
+                        resourcetype = x.pop('resourcetype')
+                        x['resource'] = instance
+                        adm = getattr(resource, resourcetype)
+                        if adm == resource.Many2ManyAttribute:
+                            value = x.pop('value')
+                            for y in value:
+                                assert y.type == x['attributeDefined'].relate
+                            m2m = adm.objects.create(**x)
+                            m2m.value.set(value)
+                        elif adm == resource.ForeignKeyAttribute:
+                            assert x['value'].resourceDefined == x['attributeDefined'].relate
+                            adm.objects.create(**x)
+                        else:
+                            adm.objects.create(**x)
+                    except TypeError as err:
+                        raise APIException("TypeError: %s is %s %s" % (x['attributeDefined'].name, x['attributeDefined'].__class__.__name__, str(err)))
+                else:
+                    if t.__class__ == resource.Many2ManyAttribute:
+                        value = x.pop('value')
+                        for y in value:
+                            assert y.type == x['attributeDefined'].relate
+                        t.value.set(value)
+                    elif t.__class__ == resource.ForeignKeyAttribute:
+                        assert x['value'].type == x['attributeDefined'].relate
+                        t.value = x['value']
+                    else:
+                        t.value = x['value']
+                    t.save()
+            labels = s.validated_data.pop('labels')
+            departments = s.validated_data.pop('departments')
+            instance.departments.set(departments)
+            instance.labels.all().delete()
+            instance.labels.bulk_create([resource.Label(resource=instance, **label) for label in labels])
+            instance.name = s.validated_data.get('name')
+            instance.save()
         return Response({'success': True})
 
     def destroy(self, request, *args, **kwargs):

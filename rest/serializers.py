@@ -251,25 +251,33 @@ class ResourceSerializer(serializers.ModelSerializer):
             else:
                 ret[field.field_name] = field.to_representation(attribute)
         attributes = ret.pop('attributes')
-        for _,v in self.de_attr_map.items():
+        for k,v in self.de_attr_map.items():
             ret[v] = None
         for attr in attributes:
             ret[self.de_attr_map[attr['attributeDefined']]] = attr['value']
         return ret
 
     def create(self, validated_data):
-        attributes = validated_data.pop('attributes', [])
-        labels = validated_data.pop('labels', [])
-        departments = validated_data.pop('departments', [])
-        r = self.Meta.model.objects.create(**validated_data)
-        r.departments.set(departments)
-        for x in attributes:
-            print(x)
-            x['resource'] = r
-            resourcetype = x.pop('resourcetype')
-            a = getattr(resource, resourcetype)
-            a.objects.create(**x)
-        r.labels.bulk_create([resource.Label(resource=r, **label) for label in labels])
+        with transaction.atomic():
+            attributes = validated_data.pop('attributes', [])
+            labels = validated_data.pop('labels', [])
+            departments = validated_data.pop('departments', [])
+            r = self.Meta.model.objects.create(**validated_data)
+            r.departments.set(departments)
+            for x in attributes:
+                x['resource'] = r
+                resourcetype = x.pop('resourcetype')
+                a = getattr(resource, resourcetype)
+                if a == resource.Many2ManyAttribute:
+                    value = x.pop('value')
+                    for y in value:
+                        assert y.type == x['attributeDefined'].relate
+                    m2m = a.objects.create(**x)
+                    m2m.value.set(value)
+                elif a == resource.ForeignKeyAttribute:
+                    assert x['value'].type == x['attributeDefined'].relate
+                    a.objects.create(**x)
+            r.labels.bulk_create([resource.Label(resource=r, **label) for label in labels])
         return r
 
     class Meta:
