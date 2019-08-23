@@ -34,9 +34,8 @@ const actions = {
     const { username, password } = userInfo
     return new Promise((resolve, reject) => {
       login({ username: username.trim(), password: password }).then(response => {
-        const { data } = response
-        commit('SET_TOKEN', data.token)
-        setToken(data.token)
+        commit('SET_TOKEN', response.token)
+        setToken(response.token)
         resolve()
       }).catch(error => {
         reject(error)
@@ -48,24 +47,25 @@ const actions = {
   getInfo({ commit, state }) {
     return new Promise((resolve, reject) => {
       getInfo(state.token).then(response => {
-        const { data } = response
-
-        if (!data) {
-          reject('Verification failed, please Login again.')
+        const { id, name, departments } = response
+        console.log(id)
+        if (!id) {
+          reject('Verification failed, get user info failed,please Login again.')
         }
-
-        const { roles, name, avatar, introduction } = data
-
+        // ignore role auth auto append admin role
+        console.log(departments)
+        departments.push('admin')
+        response.roles = departments
         // roles must be a non-empty array
-        if (!roles || roles.length <= 0) {
+        if (!departments || departments.length <= 0) {
           reject('getInfo: roles must be a non-null array!')
         }
 
-        commit('SET_ROLES', roles)
+        commit('SET_ROLES', departments)
         commit('SET_NAME', name)
-        commit('SET_AVATAR', avatar)
-        commit('SET_INTRODUCTION', introduction)
-        resolve(data)
+        commit('SET_AVATAR', '')
+        commit('SET_INTRODUCTION', '')
+        resolve(response)
       }).catch(error => {
         reject(error)
       })

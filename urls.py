@@ -27,9 +27,9 @@ router.register(r'resource/label', views.LabelKeyViewSet, basename='rs-labels-k'
 router.register(r'resource/label/(?P<label_k>[^/.]*)', views.LabelValueViewSet, basename='rs-labels-v')
 router.register(r'(?P<resource_defined>[^/.]+)', views.ResourceViewSet, basename='rs')
 
-
-
 urlpatterns = [
+    path(r'v1/login/', views.CustomAuthToken.as_view()),
+    path(r'v1/mine/', views.MineViewSet.as_view(), name="mine"),
     path('v1/', include(router.urls)),
     path('docs', include_docs_urls(title="CMDB API DOC")),
 ]

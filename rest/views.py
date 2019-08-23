@@ -1,15 +1,48 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, NotFound
-from rest_framework.filters import BaseFilterBackend, OrderingFilter, SearchFilter
+from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from .models import *
 from .models import Department, User
 from . import serializers
+import logging
+logger = logging.getLogger('audit')
+
+
+class CustomAuthToken(ObtainAuthToken):
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'user_id': user.pk
+        })
+
+
+class MineViewSet(APIView):
+
+    def get(self, request):
+        user = self.request.user
+        serializer_context = {
+            'request': request,
+        }
+        serializer = serializers.UserSerializer(user, context=serializer_context)
+        return Response(serializer.data)
+
 
 
 class UserViewSet(viewsets.ModelViewSet):

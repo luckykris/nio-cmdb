@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     # 'cacheops',
     'django_filters',
     'rest_framework',
+    'rest_framework.authtoken',
     'rest',
 ]
 
