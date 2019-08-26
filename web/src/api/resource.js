@@ -7,3 +7,11 @@ export function getResourceDefined(params) {
     params: params
   })
 }
+
+export function getResource(type, params) {
+  return request({
+    url: '/v1/' + type + '/',
+    method: 'get',
+    params: params
+  })
+}

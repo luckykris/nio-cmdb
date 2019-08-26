@@ -19,7 +19,7 @@ const resourceRouter = {
     },
     {
       path: 'resourceTable',
-      component: () => import('@/views/cmdb/resourceDefined/resourceDefinedTable'),
+      component: () => import('@/views/cmdb/resource/resourceTable'),
       name: 'resourceTable',
       meta: { title: 'Items' }
     }

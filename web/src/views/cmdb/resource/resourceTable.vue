@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <el-input v-model="listQuery.title" placeholder="Title" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
+      <ResourceDefinedSelect ref="rsSelect" v-model="type" index="name" style="width: 200px;" class="filter-item" @change="handleFilter" />
       <el-select v-model="listQuery.importance" placeholder="Imp" clearable style="width: 90px" class="filter-item">
         <el-option v-for="item in importanceOptions" :key="item" :label="item" :value="item" />
       </el-select>
@@ -51,6 +51,50 @@
           <span>{{ scope.row._mtime | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
       </el-table-column>
+      <template v-for="column in resourceColumns">
+        <el-table-column
+          v-if="SimpleResourceAttributes.indexOf(column.resourcetype)>-1"
+          :key="column.id"
+          :prop="column.name"
+          :label="column.name"
+        />
+        <el-table-column
+          v-else-if="column.resourcetype === ForeignKeyAttributeDefined"
+          :key="column.id"
+          :label="column.name"
+        >
+          <template slot-scope="scope">
+            <el-tag>{{ scope.row[column.name] }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="column.resourcetype === Many2ManyAttributeDefined"
+          :key="column.id"
+          :label="column.name"
+        >
+          <template slot-scope="scope">
+            <el-tag
+              v-for="v in scope.row[column.name]"
+              :key="v"
+            >
+              {{ v }}
+            </el-tag>
+          </template>
+        </el-table-column>
+      </template>
+      <el-table-column label="Labels" width="150px" align="center">
+        <template slot-scope="scope">
+          <el-tag
+            v-for="t in scope.row.labels"
+            :key="t.k"
+            size="mini"
+            effect="Plain"
+            :color="randomTagColor(t.k)"
+          >
+            <font color="white">{{ t.k }}: {{ t.v }}</font>
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="Actions" align="center" width="230" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
           <el-button type="primary" size="mini" @click="handleUpdate(row)">
@@ -67,11 +111,6 @@
 
     <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
       <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="70px" style="width: 400px; margin-left:50px;">
-        <el-form-item label="Type" prop="type">
-          <el-select v-model="temp.type" class="filter-item" placeholder="Please select">
-            <el-option v-for="item in calendarTypeOptions" :key="item.key" :label="item.display_name" :value="item.key" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="Date" prop="timestamp">
           <el-date-picker v-model="temp.timestamp" type="datetime" placeholder="Please pick a date" />
         </el-form-item>
@@ -113,10 +152,11 @@
 </template>
 
 <script>
-import { getResourceDefined } from '@/api/resource'
+import { getResource } from '@/api/resource'
 import waves from '@/directive/waves' // waves directive
-import { parseTime } from '@/utils'
+import { parseTime, randomColor16 } from '@/utils'
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
+import ResourceDefinedSelect from '@/views/cmdb/resourceDefined/resourceDefinedSelect'
 
 const calendarTypeOptions = [
   { key: 'CN', display_name: 'China' },
@@ -125,6 +165,13 @@ const calendarTypeOptions = [
   { key: 'EU', display_name: 'Eurozone' }
 ]
 
+const SimpleResourceAttributes = [
+  'StringAttributeDefined',
+  'IntegerAttributeDefined'
+]
+
+const ForeignKeyAttributeDefined = 'ForeignKeyAttributeDefined'
+const Many2ManyAttributeDefined = 'Many2ManyAttributeDefined'
 // arr to obj, such as { CN : "China", US : "USA" }
 const calendarTypeKeyValue = calendarTypeOptions.reduce((acc, cur) => {
   acc[cur.key] = cur.display_name
@@ -133,7 +180,7 @@ const calendarTypeKeyValue = calendarTypeOptions.reduce((acc, cur) => {
 
 export default {
   name: 'ResourceDefinedTable',
-  components: { Pagination },
+  components: { Pagination, ResourceDefinedSelect },
   directives: { waves },
   filters: {
     statusFilter(status) {
@@ -150,20 +197,24 @@ export default {
   },
   data() {
     return {
+      randomTagColorMap: {},
+      resourceColumns: [],
       tableKey: 0,
       list: null,
       total: 0,
-      listLoading: true,
+      type: null,
+      listLoading: false,
       listQuery: {
         page: 1,
         limit: 20,
         importance: undefined,
-        title: undefined,
-        type: undefined,
         sort: '+id'
       },
       importanceOptions: [1, 2, 3],
       calendarTypeOptions,
+      ForeignKeyAttributeDefined,
+      Many2ManyAttributeDefined,
+      SimpleResourceAttributes,
       sortOptions: [{ label: 'ID Ascending', key: '+id' }, { label: 'ID Descending', key: '-id' }],
       statusOptions: ['published', 'draft', 'deleted'],
       showReviewer: false,
@@ -193,15 +244,23 @@ export default {
     }
   },
   created() {
-    this.getList()
+    // this.getList()
   },
   methods: {
+    randomTagColor(k) {
+      if (this.randomTagColorMap[k] === undefined) {
+        this.randomTagColorMap[k] = randomColor16()
+      }
+      return this.randomTagColorMap[k]
+    },
     getList() {
       this.listLoading = true
-      getResourceDefined(this.listQuery).then(response => {
+      this.resourceColumns = []
+      getResource(this.type, this.listQuery).then(response => {
         this.list = response.items
         this.total = response.total
-
+        const rso = this.$refs.rsSelect.getObject()
+        this.resourceColumns = rso.attributes
         // Just to simulate the time of the request
         setTimeout(() => {
           this.listLoading = false

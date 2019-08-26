@@ -348,3 +348,11 @@ export function removeClass(ele, cls) {
     ele.className = ele.className.replace(reg, ' ')
   }
 }
+
+export function randomColor16() {
+  let color = '#'
+  for (let i = 0; i < 6; i++) {
+    color += (Math.random() * 16 | 0).toString(16)
+  }
+  return color
+}
