@@ -62,6 +62,9 @@ class Resource(BaseModel):
     type = models.ForeignKey(ResourceDefined, db_constraint=False, on_delete=models.CASCADE)
     departments = models.ManyToManyField(Department, blank=True)
 
+    class Meta:
+        ordering = ['_ctime']
+
 
 class Label(models.Model):
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE, db_constraint=False, related_name='labels')

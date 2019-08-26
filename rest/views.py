@@ -2,8 +2,9 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, NotFound
 from rest_framework.filters import OrderingFilter, SearchFilter
-from django_filters.rest_framework import DjangoFilterBackend
+from django_filters.rest_framework import filters, filterset, DjangoFilterBackend
 from django.db import transaction
+from django.db.models import Q
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView
@@ -143,8 +144,7 @@ class AttributeViewSet(viewsets.ModelViewSet):
 class ResourceViewSet(viewsets.ModelViewSet):
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filter_fields = ('name', 'departments__name', 'labels__k', 'labels__v')
-    search_fields = ('$name', '$departments__name', '$labels__k', 'labels__v',)
+    search_fields = ('$id', '$name', '$departments__name', '$labels__k', '$labels__v')
     ordering_fields = ('name', '_ctime', '_mtime')
 
     @staticmethod
@@ -163,10 +163,31 @@ class ResourceViewSet(viewsets.ModelViewSet):
                 setattr(self, 'rd', rd)
         return rd
 
+    def filter_queryset_from_request(self, queryset):
+        rd = self.get_resource_defined()
+        m = {x.name: x for x in rd.attributes.all()}
+        fqs = []
+        for k, v in self.request.query_params.items():
+            if k.startswith('~'):
+                k2 = k[1:]
+                pattern = "%s___value__iregex"
+            else:
+                k2 = k
+                pattern = "%s___value"
+            if k2 in m:
+                acn = self.get_attribute_classname_by_attribute_defined(m[k2].__class__.__name__)
+                q_kwargs = {pattern % acn: v}
+                tmp_fq = Q(attributeDefined=m[k2]) & Q(**q_kwargs)
+                fqs.append(tmp_fq)
+        for fq in fqs:
+            queryset = queryset.filter(attributes__in=resource.Attribute.objects.filter(fq).all())
+        return queryset
+
     def get_queryset(self):
         rd = self.get_resource_defined()
-        setattr(self, 'rd', rd)
-        queryset = resource.Resource.objects.filter(type=rd).prefetch_related('departments', 'labels', 'attributes')
+        queryset = resource.Resource.objects.filter(type=rd)\
+            .prefetch_related('departments', 'labels', 'attributes').distinct()
+        queryset = self.filter_queryset_from_request(queryset)
         return queryset
 
     def get_serializer_class(self):

@@ -2,13 +2,8 @@
   <div class="app-container">
     <div class="filter-container">
       <ResourceDefinedSelect ref="rsSelect" v-model="type" index="name" style="width: 200px;" class="filter-item" @change="handleFilter" />
-      <el-select v-model="listQuery.importance" placeholder="Imp" clearable style="width: 90px" class="filter-item">
-        <el-option v-for="item in importanceOptions" :key="item" :label="item" :value="item" />
-      </el-select>
-      <el-select v-model="listQuery.type" placeholder="Type" clearable class="filter-item" style="width: 130px">
-        <el-option v-for="item in calendarTypeOptions" :key="item.key" :label="item.display_name+'('+item.key+')'" :value="item.key" />
-      </el-select>
-      <el-select v-model="listQuery.sort" style="width: 140px" class="filter-item" @change="handleFilter">
+      <el-input v-model="listQuery.search" placeholder="Search" clearable class="filter-item" style="width: 130px" />
+      <el-select v-model="listQuery.ordering" style="width: 140px" class="filter-item" @change="handleFilter">
         <el-option v-for="item in sortOptions" :key="item.key" :label="item.label" :value="item.key" />
       </el-select>
       <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">
@@ -122,9 +117,6 @@
             <el-option v-for="item in statusOptions" :key="item" :label="item" :value="item" />
           </el-select>
         </el-form-item>
-        <el-form-item label="Imp">
-          <el-rate v-model="temp.importance" :colors="['#99A9BF', '#F7BA2A', '#FF9900']" :max="3" style="margin-top:8px;" />
-        </el-form-item>
         <el-form-item label="Remark">
           <el-input v-model="temp.remark" :autosize="{ minRows: 2, maxRows: 4}" type="textarea" placeholder="Please input" />
         </el-form-item>
@@ -207,15 +199,22 @@ export default {
       listQuery: {
         page: 1,
         limit: 20,
-        importance: undefined,
-        sort: '+id'
+        search: '',
+        ordering: '-_ctime'
       },
       importanceOptions: [1, 2, 3],
       calendarTypeOptions,
       ForeignKeyAttributeDefined,
       Many2ManyAttributeDefined,
       SimpleResourceAttributes,
-      sortOptions: [{ label: 'ID Ascending', key: '+id' }, { label: 'ID Descending', key: '-id' }],
+      sortOptions: [
+        { label: 'Name Ascending', key: '+name' },
+        { label: 'Name Descending', key: '-name' },
+        { label: 'Ctime Ascending', key: '+_ctime' },
+        { label: 'Ctime Descending', key: '-_ctime' },
+        { label: 'Mtime Ascending', key: '+_mtime' },
+        { label: 'Mtime Descending', key: '-_mtime' },
+        ],
       statusOptions: ['published', 'draft', 'deleted'],
       showReviewer: false,
       temp: {
@@ -286,9 +285,9 @@ export default {
     },
     sortByID(order) {
       if (order === 'ascending') {
-        this.listQuery.sort = '+id'
+        this.listQuery.ordering = '+_ctime'
       } else {
-        this.listQuery.sort = '-id'
+        this.listQuery.ordering = '-_ctime'
       }
       this.handleFilter()
     },
