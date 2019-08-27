@@ -251,10 +251,12 @@ class ResourceSerializer(serializers.ModelSerializer):
             else:
                 ret[field.field_name] = field.to_representation(attribute)
         attributes = ret.pop('attributes')
-        for k,v in self.de_attr_map.items():
-            ret[v] = None
+        for k, v in self.de_attr_map.items():
+            # 等attributeDefined增加时可以同时增加资源的attribute属性的时候 可以增加默认值功能,否则影响filter功能
+            # ret[v.name] = v.default
+            ret[v.name] = None
         for attr in attributes:
-            ret[self.de_attr_map[attr['attributeDefined']]] = attr['value']
+            ret[self.de_attr_map[attr['attributeDefined']].name] = attr['value']
         return ret
 
     def create(self, validated_data):

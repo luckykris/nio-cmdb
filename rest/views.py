@@ -196,7 +196,7 @@ class ResourceViewSet(viewsets.ModelViewSet):
             rd = self.get_resource_defined()
             attr_map = {x.name: (x.id, ResourceViewSet.get_attribute_classname_by_attribute_defined(x.__class__.__name__))
                         for x in rd.attributes.all()}
-            de_attr_map = {x.id: x.name for x in rd.attributes.all()}
+            de_attr_map = {x.id: x for x in rd.attributes.all()}
 
             def tmpSerializer(*args, **kwargs):
                 kwargs['attr_map'] = attr_map
