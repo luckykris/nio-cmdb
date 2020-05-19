@@ -13,3 +13,18 @@ class CustomPageNumberPagination(PageNumberPagination):
             ('previous', self.get_previous_link()),
             ('items', data)
         ]))
+
+    def get_page_size(self, request):
+        if self.page_size_query_param:
+            page_size = request.query_params.get(self.page_size_query_param)
+            if page_size is None:
+                return self.page_size
+            else:
+                page_size = int(page_size)
+            if page_size > 0:
+                return page_size
+            elif page_size == 0:
+                return None
+            else:
+                pass
+        return self.page_size

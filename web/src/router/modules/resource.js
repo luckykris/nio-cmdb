@@ -7,7 +7,7 @@ const resourceRouter = {
   component: Layout,
   name: 'Resource',
   meta: {
-    title: 'Resource',
+    title: '资源模型',
     icon: 'table'
   },
   children: [
@@ -15,13 +15,13 @@ const resourceRouter = {
       path: 'resourceDefinedTable',
       component: () => import('@/views/cmdb/resourceDefined/resourceDefinedTable'),
       name: 'resourceDefinedTable',
-      meta: { title: 'Define' }
+      meta: { title: '资源模型' }
     },
     {
       path: 'resourceTable',
       component: () => import('@/views/cmdb/resource/resourceTable'),
       name: 'resourceTable',
-      meta: { title: 'Items' }
+      meta: { title: '资源数据' }
     }
   ]
 }

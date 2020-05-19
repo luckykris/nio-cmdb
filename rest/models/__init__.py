@@ -1,7 +1,7 @@
 from mptt.models import MPTTModel, TreeForeignKey
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-__all__ = ['resource', 'Department', 'User']
+__all__ = ['resource', 'service', 'Department', 'User', 'hooks', 'proxy']
 
 
 class Department(MPTTModel):
@@ -22,26 +22,26 @@ class User(AbstractUser):
 
 
 class DepartmentLabel(models.Model):
-    resource = models.ForeignKey(Department, on_delete=models.CASCADE, db_constraint=False, related_name='labels')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, db_constraint=False, related_name='labels')
     k = models.CharField(u'k', max_length=64, blank=False, null=False)
     v = models.CharField(u'v', max_length=64, blank=False, null=False)
 
     class Meta:
-        unique_together = ["resource", "k", "v"]
-        index_together = ["resource", "k", "v"]
+        unique_together = ["department", "k", "v"]
+        index_together = ["department", "k", "v"]
 
     def __unicode__(self):
         return '%s: %s' % (self.k, self.v)
 
 
 class UserLabel(models.Model):
-    resource = models.ForeignKey(User, on_delete=models.CASCADE, db_constraint=False, related_name='labels')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_constraint=False, related_name='labels')
     k = models.CharField(u'k', max_length=64, blank=False, null=False)
     v = models.CharField(u'v', max_length=64, blank=False, null=False)
 
     class Meta:
-        unique_together = ["resource", "k", "v"]
-        index_together = ["resource", "k", "v"]
+        unique_together = ["user", "k", "v"]
+        index_together = ["user", "k", "v"]
 
     def __unicode__(self):
         return '%s: %s' % (self.k, self.v)

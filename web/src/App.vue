@@ -6,6 +6,10 @@
 
 <script>
 export default {
-  name: 'App'
+  name: 'App',
+  created() {
+    this.$store.dispatch('resource/loadAttributeType')
+    this.$store.dispatch('resource/loadResourceDefined')
+  }
 }
 </script>

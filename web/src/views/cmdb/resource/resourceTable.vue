@@ -1,7 +1,14 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <ResourceDefinedSelect ref="rsSelect" v-model="type" index="name" style="width: 200px;" class="filter-item" @change="handleFilter" />
+      <ResourceDefinedSelect
+        ref="rsSelect"
+        v-model="type"
+        index="name"
+        style="width: 200px;"
+        class="filter-item"
+        @change="handleFilter"
+      />
       <el-input v-model="listQuery.search" placeholder="Search" clearable class="filter-item" style="width: 130px" />
       <el-select v-model="listQuery.ordering" style="width: 140px" class="filter-item" @change="handleFilter">
         <el-option v-for="item in sortOptions" :key="item.key" :label="item.label" :value="item.key" />
@@ -30,31 +37,25 @@
       style="width: 100%;"
       @sort-change="sortChange"
     >
-      <el-table-column label="ID" prop="id" sortable="custom" align="center" width="80">
+      <el-table-column label="ID" prop="id" sortable="custom" align="center">
         <template slot-scope="scope">
           <span>{{ scope.row.id }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="Name" min-width="150px" prop="name" />
-      <el-table-column label="Ctime" width="150px" align="center">
+      <el-table-column label="资源名称" prop="name" />
+      <el-table-column label="创建时间" align="center">
         <template slot-scope="scope">
           <span>{{ scope.row._ctime | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="Mtime" width="150px" align="center">
+      <el-table-column label="修改时间" align="center">
         <template slot-scope="scope">
           <span>{{ scope.row._mtime | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
         </template>
       </el-table-column>
       <template v-for="column in resourceColumns">
         <el-table-column
-          v-if="SimpleResourceAttributes.indexOf(column.resourcetype)>-1"
-          :key="column.id"
-          :prop="column.name"
-          :label="column.name"
-        />
-        <el-table-column
-          v-else-if="column.resourcetype === ForeignKeyAttributeDefined"
+          v-if="column.resourcetype === ForeignKeyAttributeDefined"
           :key="column.id"
           :label="column.name"
         >
@@ -76,6 +77,15 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column
+          v-else
+          :key="column.id"
+          :label="column.name"
+        >
+          <template slot-scope="scope">
+            <span>{{ scope.row[column.name] }}</span>
+          </template>
+        </el-table-column>
       </template>
       <el-table-column label="Labels" width="150px" align="center">
         <template slot-scope="scope">
@@ -90,12 +100,12 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="Actions" align="center" width="230" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="230" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
-          <el-button type="primary" size="mini" @click="handleUpdate(row)">
+          <el-button disabled type="primary" size="mini" @click="handleUpdate(row)">
             Edit
           </el-button>
-          <el-button v-if="row.status!='deleted'" size="mini" type="danger" @click="handleModifyStatus(row,'deleted')">
+          <el-button v-if="row.status!='deleted'" disabled size="mini" type="danger" @click="handleModifyStatus(row,'deleted')">
             Delete
           </el-button>
         </template>
@@ -213,8 +223,8 @@ export default {
         { label: 'Ctime Ascending', key: '+_ctime' },
         { label: 'Ctime Descending', key: '-_ctime' },
         { label: 'Mtime Ascending', key: '+_mtime' },
-        { label: 'Mtime Descending', key: '-_mtime' },
-        ],
+        { label: 'Mtime Descending', key: '-_mtime' }
+      ],
       statusOptions: ['published', 'draft', 'deleted'],
       showReviewer: false,
       temp: {

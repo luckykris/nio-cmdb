@@ -1,5 +1,5 @@
 module.exports = {
-  title: 'Vue Element Admin',
+  title: 'nio-cmdb',
 
   /**
    * @type {boolean} true | false

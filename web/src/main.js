@@ -18,7 +18,7 @@ import './permission' // permission control
 import './utils/error-log' // error log
 
 import * as filters from './filters' // global filters
-
+import { i18n } from './i18n'
 /**
  * If you don't want to use mock-server
  * you want to use MockJs for mock api
@@ -47,5 +47,6 @@ new Vue({
   el: '#app',
   router,
   store,
+  i18n,
   render: h => h(App)
 })

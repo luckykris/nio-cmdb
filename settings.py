@@ -52,6 +52,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'rest.middlewares.exceptions.HandleExceptionMiddleware'
 ]
 
 ROOT_URLCONF = 'urls'
@@ -59,7 +60,7 @@ ROOT_URLCONF = 'urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')]
+        'DIRS': [os.path.join(BASE_DIR, 'templates'), 'templates']
         ,
         'APP_DIRS': True,
         'OPTIONS': {
@@ -89,7 +90,7 @@ DATABASES = {
         'PORT': '3306',
         'OPTIONS': {
             'init_command': 'SET default_storage_engine=INNODB,character_'
-                            'set_connection=utf8,collation_connection=utf8_unicode_ci;'
+                            'set_connection=utf8,collation_connection=utf8_bin;'
         },
         'charset': 'utf-8'
     }
@@ -149,17 +150,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
-STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
-    # 'EXCEPTION_HANDLER': 'cmdb.rest.exception_handler.custom_exception_handler',
+    'EXCEPTION_HANDLER': 'rest.exception_handler.custom_exception_handler',
     'DEFAULT_PAGINATION_CLASS': 'rest.pagination.CustomPageNumberPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',
-        # 'rest_framework.permissions.IsAuthenticated',
         'rest_framework.authentication.TokenAuthentication',
-    )
+    ),
+    # 'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated']
 }
 
 AUTH_USER_MODEL = "rest.User"
@@ -176,5 +176,16 @@ CACHEOPS_REDIS = {
 CACHEOPS_DEGRADE_ON_FAILURE = True
 
 CACHEOPS = {
-    '*.*': {'ops': 'all', 'timeout': 60*60 ,'cache_on_save': True},
+    '*.*': {'ops': 'all', 'timeout': 60*60, 'cache_on_save': True},
 }
+
+#URL_PREFIX = r'd-cmdb/'
+URL_PREFIX = r''
+STATIC_URL = '/static/'
+#STATIC_URL = '/d-cmdb/static/'
+
+STATICFILES_DIRS = ['templates/static/']
+
+# app config
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+DATE_FORMAT = '%Y-%m-%d'

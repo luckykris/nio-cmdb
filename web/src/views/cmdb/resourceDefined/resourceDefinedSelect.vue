@@ -3,6 +3,7 @@
     v-model="mySelectId"
     :remote-method="remoteMethod"
     remote
+    placeholder="选择模型"
     reserve-keyword
     filterable
   >
